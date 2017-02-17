@@ -4,14 +4,38 @@
 
 #include "constants.h"
 #include "data_store.h"
+#include "commands.h"
+
+void parse_args(char *arguments){
+    if (arguments == NULL)
+        return;
+    printf("args are: %s\n", arguments);
+}
 
 char parse_argument(char *argument, int N){
     return 'x';
 }
 
-
 void handle_instruction_line(char *line){
+    printf("Thats an instruction line!\n");
 
+}
+
+void handle_cmd_line(char *line) {
+    /* imply that line it trimmed */
+    char* c = strpbrk(line, WHITESPACE);
+    t_cmd command;
+    char* args = NULL;
+
+    if (c != NULL) {
+        *c = '\0';
+        args = c + 1;
+    }
+    command = get_command(line);
+    parse_args(args);
+
+
+    printf("Thats a command %s line!\n", command.name);
 }
 
 
@@ -36,8 +60,15 @@ void parse_line(char *line){
     while (*line == ' ' || *line == '\t')
         line++;
     printf("parsing %s\n", line);
-    if (line[0] == '.')
-        handle_instruction_line(line);
+    switch(line[0]) {
+        case '\0':
+            return;
+        case '.':
+            handle_instruction_line(line);
+            break;
+        default:
+            handle_cmd_line(line);
+    }
 
 }
 

@@ -6,7 +6,14 @@
 #define MAX_MEMORY_ADDR 999
 
 #define SRC_EXT .as
+#define WHITESPACE " \t"
 
 typedef unsigned short int t_word;
+typedef struct cmd {
+    char* name;
+    int opcode;
+    int arg_group;
+} t_cmd;
+
 
 #endif
