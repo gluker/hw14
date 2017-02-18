@@ -4,7 +4,7 @@
 #define DATA_STORE_H
 
 void push_to_buffer(char**, char);
-void save_label(char*);
+void save_label(char*, int, int);
 t_word get_label_addr(char*);
 
 #endif

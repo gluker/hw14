@@ -4,11 +4,35 @@
 #define INIT_LINE_BUFFER 32 
 #define LINE_BUFFER_INCREMENT 32
 #define MAX_MEMORY_ADDR 999
+#define MAX_CMD_LENGTH 4
+
+#define IMMEDIATE_ADDR 0
+#define DIRECT_ADDR 1
+#define INDEX_ADDR 2
+#define REGISTER_ADDR 3
+
+#define GROUP_OFFSET 10
+#define OPCODE_OFFSET 6
+#define FIRST_ARG_OFFSET 4
+#define SECOND_ARG_OFFSET 2
+#define CONSTANT_OFFSET 2
+#define BASIC_CMD 28672 /* 111 on the left side */
+
+#define LINE_COMMAND 0
+#define LINE_INSTRUCTION 1
 
 #define SRC_EXT .as
 #define WHITESPACE " \t"
 
 typedef unsigned short int t_word;
+
+
+typedef struct label {
+    char* name;
+    int type;
+    int addr;
+} t_label;
+
 typedef struct cmd {
     char* name;
     int opcode;

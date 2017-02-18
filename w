@@ -2,9 +2,10 @@ blah
 ;blah
    notblah
 
-    abc 1 2
-LAB1: lkaj ede 33
+    cmp 1, r2
+    asdf r1[r3]
+LAB1: lkaj ede, #33
 
-    .asdasd "rerwer"
+    .string "rerwer"
 
    sdf:

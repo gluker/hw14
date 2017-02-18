@@ -21,7 +21,9 @@ void push_to_buffer(char **buffer, char c){
         current_length = 0;
 }
 
-void save_label(char* label) {
+
+
+void save_label(char* label, int type, int addr) {
     printf("saving label %s\n", label);
 }
 
