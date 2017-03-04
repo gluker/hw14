@@ -2,8 +2,8 @@ blah
 ;blah
    notblah
 
-    cmp 1, r2
-    asdf r1[r3]
+    cmp #-5, r2
+    mov r7[r6], r5
 LAB1: lkaj ede, #33
 
     .string "rerwer"

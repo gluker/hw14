@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "data_store.h"
 #include "constants.h"
@@ -23,10 +24,38 @@ void push_to_buffer(char **buffer, char c){
 
 
 
+t_label labels_store[100];
+int labels_count = 0;
 void save_label(char* label, int type, int addr) {
-    printf("saving label %s\n", label);
+/* if label is cmd, addr is exact. if data - offset from end of cmd part */
+    t_label lab;
+    lab.name = label;
+    lab.type = type; 
+    lab.addr = addr;
+    labels_store[labels_count++] = lab;
 }
 
 t_word get_label_addr(char* label) {
+    int i;
+    for (i=0; i<labels_count; i++) {
+        if (strcmp(labels_store[i].name, label) == 0)
+            return labels_store[i].addr;
+    }
     return 0;
 }
+
+
+t_word *commands_stack = NULL;
+t_word *commands_stack_tail = NULL;
+int tail_index = 100;
+
+int push_command(t_word cmd) {
+    if (commands_stack == NULL){
+        commands_stack = malloc(INIT_CMD_BUFFER * sizeof(t_word));
+        commands_stack_tail = commands_stack;
+    }
+    *(commands_stack_tail++) = cmd;
+    return tail_index++;
+}
+
+

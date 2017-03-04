@@ -14,11 +14,15 @@ int get_register_index(char* line) {
 }
 
 t_word get_register_code(char* line) {
-    return 0;
+    return atoi(line + 1) << FIRST_REGISTER_OFFSET;
 }
 
 t_word get_index_code(char* line) {
-    return 3;
+    char r1,r2;
+    r2 = atoi(line + 1);
+    r1 = atoi(strchr(line, '[') + 2);
+    return  (r1 << FIRST_REGISTER_OFFSET) |
+            (r2 << SECOND_REGISTER_OFFSET);
 }
 
 t_word get_label_code(char* line) {
@@ -28,7 +32,7 @@ t_word get_label_code(char* line) {
 t_word get_command_code(t_cmd cmd, int arg1_type, int arg2_type) {
     return BASIC_CMD |
             (cmd.arg_group << GROUP_OFFSET) |
-            (cmd.opcode << OPCODE_OFFSET) |
+            (cmd.opcode << OPCODE_OFFSET)   |
             (arg1_type << FIRST_ARG_OFFSET) |
             (arg2_type << SECOND_ARG_OFFSET);
 }
@@ -40,7 +44,7 @@ t_word get_const_code(char* arg) {
 }
 
 t_cmd get_command(char* name){
-    int cmd_count = 5;
+    int cmd_count = 6;
     t_cmd commands[] = {
         {"mov", 0, 2},
         {"cmp", 1, 2},
