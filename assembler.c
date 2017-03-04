@@ -30,7 +30,7 @@ t_word parse_argument(char *argument, int* type){
             printf("%s is a register: %d\n", argument, i);
             *type = REGISTER_ADDR;
             return get_register_code(argument);
-        } 
+        }
         printf("%s is an index: %d\n", argument, i);
         *type = INDEX_ADDR;
         return get_index_code(argument);
@@ -56,6 +56,27 @@ void parse_args(char *arguments,
     *arg1 = parse_argument(arguments, arg1_type);
 }
 
+int store_string(char* string) {
+    int start_index;
+    char *begin, *end;
+    begin = strchr(string, '"') + 1;
+    end = strchr(begin, '"');
+    start_index = push_data(*(begin++));
+    while (begin < end)
+        push_data(*(begin++));
+    return start_index;
+}
+
+int store_data(char* arg) {
+    char *comma;
+    int start_index;
+    start_index = push_data(atoi(arg));
+    while((arg = strchr(arg, ',')) != NULL){
+        push_data(atoi(++arg));
+    }
+    return start_index;
+}
+
 int handle_instruction_line(char *line){
     char* c = strpbrk(line, WHITESPACE);
     char* args = NULL;
@@ -69,16 +90,76 @@ int handle_instruction_line(char *line){
         return;
     }
     if (strcmp(line, ".string") == 0) {
-        return;
+        return store_string(args);
     }
     if (strcmp(line, ".extern") == 0) {
         return;
     }
     if (strcmp(line, ".data") == 0) {
-        return;
+        return store_data(args);
     }
 
     fprintf(stderr, "Unrecognized instruction'%s'\n", line);
+}
+
+Argument* get_argument(char *arg){
+    int i;
+    char *comma;
+    char *nextarg;
+    Argument* argument;
+    argument = create_argument();
+
+    nextarg = strchr(arg, ',');
+    if (nextarg != NULL) {
+        nextarg = '\n';
+        nextarg++;
+    } 
+    
+    arg = trim_left(arg);
+    i = get_register_index(arg);
+
+    if (arg[0] == '#') {
+        argument->addr_type = IMMEDIATE_ADDR;
+        argument->value = get_const_code(argument);   
+        arg = nextarg;
+        return argument;
+    }
+    
+    if (i != -1) {
+        if (strchr(argument, '[') == NULL) {
+            argument->addr_type = REGISTER_ADDR;
+            argument->value = get_register_code(arg);
+            arg = nextarg;
+            return argument;
+        }
+        argument->addr_type = INDEX_ADDR;
+        argument->value = get_index_code(argument);
+        arg = nextarg;
+        return argument;
+    }
+
+    argument->addr_type = DIRECT_ADDR;
+    argument->label = get_label_proxy(arg);
+    arg = nextarg;
+    return argument;
+}
+Command* add_args(Command *cmd, char *args) {
+    switch(cmd->command->arg_group) {
+        case 0:
+            break;
+        case 1:
+            cmd->dest = get_argument(args);
+            break;
+        case 2:
+            cmd->src = get_argument(args);
+            cmd->dest = get_argument(args);
+            break;
+        default:
+            /*TODO: handle as an error */
+            break;
+    }
+    /*TODO: args should be null */
+    return cmd;
 }
 
 int handle_cmd_line(char *line) {
@@ -89,7 +170,8 @@ int handle_cmd_line(char *line) {
     t_word arg1, arg2, cmd;
     int arg1_type = 0, arg2_type = 0, cmd_index;
     char* c = strpbrk(line, WHITESPACE);
-    t_cmd command;
+    t_cmd* command;
+    Command* command_node;
     char* args = NULL;
 
     if (c != NULL) {
@@ -99,8 +181,15 @@ int handle_cmd_line(char *line) {
     }
 
     command = get_command(line);
+    if(command->opcode == -1){
+        fprintf(stderr, "Unrecognized command '%s'\n", line);
+        return -1;
+    }
+    command_node = create_command_node();
+    command_node->command = command;
+    add_args(command_node, args);
 
-    switch (command.arg_group) {
+    switch (command->arg_group) {
         case 0:
             cmd = get_command_code(command, arg1_type, arg2_type);
             cmd_index = push_command(cmd);
@@ -121,7 +210,7 @@ int handle_cmd_line(char *line) {
             return -1;
     }
 
-    printf("Thats a command %s line!\n", command.name);
+    printf("Thats a command %s line!\n", command->name);
     return cmd_index;
 }
 

@@ -38,11 +38,29 @@ typedef struct label {
     int addr;
 } t_label;
 
+typedef struct label_proxy {
+    char *name;
+    char type;
+    void *target;
+} Label;
+
 typedef struct cmd {
     char* name;
     int opcode;
     int arg_group;
 } t_cmd;
 
+typedef struct argument {
+    char addr_type;
+    t_word value;
+    Label *label;
+} Argument;
+
+typedef struct cmd_node {
+    t_cmd* command;
+    struct argument *dest;
+    struct argument *src;
+    struct cmd_node *next;
+} Command;
 
 #endif

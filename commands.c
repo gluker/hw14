@@ -26,13 +26,16 @@ t_word get_index_code(char* line) {
 }
 
 t_word get_label_code(char* line) {
+    t_label *lab;
+    lab = get_label(line);
+    
     return 6;
 }
 
-t_word get_command_code(t_cmd cmd, int arg1_type, int arg2_type) {
+t_word get_command_code(t_cmd* cmd, int arg1_type, int arg2_type) {
     return BASIC_CMD |
-            (cmd.arg_group << GROUP_OFFSET) |
-            (cmd.opcode << OPCODE_OFFSET)   |
+            (cmd->arg_group << GROUP_OFFSET) |
+            (cmd->opcode << OPCODE_OFFSET)   |
             (arg1_type << FIRST_ARG_OFFSET) |
             (arg2_type << SECOND_ARG_OFFSET);
 }
@@ -43,22 +46,49 @@ t_word get_const_code(char* arg) {
     return (t_word)atoi(arg) << CONSTANT_OFFSET;
 }
 
-t_cmd get_command(char* name){
-    int cmd_count = 6;
-    t_cmd commands[] = {
-        {"mov", 0, 2},
-        {"cmp", 1, 2},
-        {"add", 2, 2},
-        {"sub", 3, 2},
-        {"not", 4, 1},
-        {"clr", 5, 1}
-    };
+Command* cmd_stack;
+Command* cmd_stack_tail;
 
-    t_cmd err = {"error", -1, -1};
+Command* command_stack_push(Command* cmd) {
+    if(cmd_stack_tail == NULL) {
+        cmd_stack = cmd;
+        cmd_stack_tail = cmd;
+        return cmd;
+    }
+    cmd_stack_tail->next = cmd;
+    cmd_stack_tail = cmd;
+    return cmd;
+}
+
+Command* create_command_node() {
+    Command* cmd;
+    cmd = malloc(sizeof(Command));
+    if (cmd == NULL){
+        /* TODO print error */
+        return NULL;
+    }
+    return command_stack_push(cmd);
+}
+Argument* create_argument() {
+   return malloc(sizeof(Argument)); 
+}
+
+int cmd_count = 6;
+t_cmd commands[] = {
+    {"mov", 0, 2},
+    {"cmp", 1, 2},
+    {"add", 2, 2},
+    {"sub", 3, 2},
+    {"not", 4, 1},
+    {"clr", 5, 1}
+};
+t_cmd err = {"error", -1, -1};
+t_cmd* get_command(char* name){
+
     int i;
     for (i=0; i < cmd_count; i++) {
         if (strcmp(name, commands[i].name) == 0)
-            return commands[i];
+            return &commands[i];
     }
-    return err;
+    return &err;
 }

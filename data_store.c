@@ -22,35 +22,50 @@ void push_to_buffer(char **buffer, char c){
         current_length = 0;
 }
 
-
-
-t_label labels_store[100];
+t_label* labels_store[100];
 int labels_count = 0;
 void save_label(char* label, int type, int addr) {
+/* TODO: check pointers for null */
 /* if label is cmd, addr is exact. if data - offset from end of cmd part */
-    t_label lab;
-    lab.name = label;
-    lab.type = type; 
-    lab.addr = addr;
+    t_label *lab = (t_label*)malloc(sizeof(t_label));
+    lab->name = malloc(strlen(label)+1);
+    strcpy(lab->name, label);
+    lab->type = type; 
+    lab->addr = addr;
     labels_store[labels_count++] = lab;
+}
+
+t_label *get_label(char* label) {
+    int i;
+    for (i=0; i<labels_count; i++) {
+        if (strcmp(labels_store[i]->name, label) == 0)
+            return labels_store[i];
+    }
+    return NULL;
 }
 
 t_word get_label_addr(char* label) {
     int i;
     for (i=0; i<labels_count; i++) {
-        if (strcmp(labels_store[i].name, label) == 0)
-            return labels_store[i].addr;
+        if (strcmp(labels_store[i]->name, label) == 0)
+            return labels_store[i]->addr;
     }
     return 0;
 }
 
+t_word data_store[100];
+int data_count = 0;
+int push_data(t_word data) {
+    data_store[data_count] = data;
+    return data_count++;
+}
 
 t_word *commands_stack = NULL;
 t_word *commands_stack_tail = NULL;
 int tail_index = 100;
 
 int push_command(t_word cmd) {
-    if (commands_stack == NULL){
+    if (commands_stack == NULL) {
         commands_stack = malloc(INIT_CMD_BUFFER * sizeof(t_word));
         commands_stack_tail = commands_stack;
     }
@@ -58,4 +73,7 @@ int push_command(t_word cmd) {
     return tail_index++;
 }
 
+Label* get_label_proxy(char* name){
+    return NULL;
+}
 
