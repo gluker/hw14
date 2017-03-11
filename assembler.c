@@ -2,7 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 
+#include "app_state.h"
 #include "constants.h"
 #include "data_store.h"
 #include "commands.h"
@@ -20,18 +22,18 @@ t_word parse_argument(char *argument, int* type){
     i = get_register_index(argument);
 
     if (argument[0] == '#') {
-        printf("Immediate addr\n");
+        log_debug_info("Immediate addr\n");
         *type = IMMEDIATE_ADDR;
         return get_const_code(argument);   
     }
     
     if (i != -1) {
         if (strchr(argument, '[') == NULL) {
-            printf("%s is a register: %d\n", argument, i);
+            log_debug_info("%s is a register: %d\n", argument, i);
             *type = REGISTER_ADDR;
             return get_register_code(argument);
         }
-        printf("%s is an index: %d\n", argument, i);
+        log_debug_info("%s is an index: %d\n", argument, i);
         *type = INDEX_ADDR;
         return get_index_code(argument);
     }
@@ -88,19 +90,21 @@ int handle_instruction_line(char *line, void *target){
     }
     
     if (strcmp(line, ".entery") == 0) {
+        not_implemented();
         return -1;
     }
     if (strcmp(line, ".string") == 0) {
         return store_string(args, target);
     }
     if (strcmp(line, ".extern") == 0) {
+        not_implemented();
         return -1;
     }
     if (strcmp(line, ".data") == 0) {
         return store_data(args, target);
     }
 
-    fprintf(stderr, "Unrecognized instruction'%s'\n", line);
+    log_error("Unrecognized instruction'%s'\n", line);
     return -1;
 }
 
@@ -112,7 +116,7 @@ Argument* get_argument(char *arg){
 
     nextarg = strchr(arg, ',');
     if (nextarg != NULL) {
-        *nextarg = '\n';
+        *nextarg = '\0';
         nextarg++;
     } 
     
@@ -179,13 +183,13 @@ Command* handle_cmd_line(char *line) {
 
     command = get_command(line);
     if(command == NULL){
-        fprintf(stderr, "Unrecognized command '%s'\n", line);
+        log_error("Unrecognized command '%s'\n", line);
         return NULL;
     }
     command_node = create_command_node(command);
     add_args(command_node, args);
 
-    printf("Thats a command %s line!\n", command->name);
+    log_debug_info("Thats a command %s line!\n", command->name);
     return command_node;
 }
 
@@ -209,8 +213,9 @@ void parse_line(char *line){
     }
     
     line = trim_left(line);
-    printf("parsing %s\n", line);
+    log_debug_info("parsing %s\n", line);
     switch(line[0]) {
+        case '\n':
         case '\0':
             return;
         case '.':
@@ -228,27 +233,19 @@ void parse_line(char *line){
 }
 
 void read_from_file(FILE *source){
-    char *line_buffer = NULL;
+    char *line_buffer[MAX_STR_LEN];
     char c;
 
-    while(1) {
-        c = fgetc(source);
-        switch (c) {
-            case EOF:
-                return;
-            case '\n':
-                push_to_buffer(&line_buffer, '\0');
-                parse_line(line_buffer);
-                break;
-            default:
-                push_to_buffer(&line_buffer, c);
-        }
+    while(fgets(line_buffer, MAX_STR_LEN, source) != NULL) {
+        current_line_number++;
+        parse_line(line_buffer);
     }
 }
 
 void assemble_files(char* basename){
     Command *current_cmd;  
     
+    log_debug_info("assembling files for %s\n", basename);
 }
 
 char* str_concat(char* str1, char* str2) {
@@ -261,7 +258,6 @@ char* str_concat(char* str1, char* str2) {
 int main(int argc, char *argv[])
 {
     int i=0; FILE *current_source;
-    char* src_filename;
     if (argc < 2) {
         printf("Specify names of .as files to assemble\n");
         return 1;
@@ -275,9 +271,14 @@ int main(int argc, char *argv[])
             continue;
         }
         printf("compiling %s...\n", argv[i]);
+        clear_state();
         read_from_file(current_source);
+        if (!is_source_correct){
+            printf("Source isn't correct - not creating output files\n");
+            continue;
+        }
+        assemble_files(argv[i]);
     }
 
-    free(src_filename);
     return 0;
 }

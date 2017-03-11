@@ -96,3 +96,11 @@ t_cmd* get_command(char* name){
     }
     return NULL;
 }
+
+void commands_cleanup() {
+
+    cmd_stack = NULL;
+    cmd_stack_tail = NULL;
+    cmd_stack_counter = 0;
+
+}

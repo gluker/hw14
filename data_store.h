@@ -3,6 +3,7 @@
 #ifndef DATA_STORE_H
 #define DATA_STORE_H
 
+void data_store_cleanup();
 void push_to_buffer(char**, char);
 void save_label(char*, int, int);
 t_label* get_label(char*);

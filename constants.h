@@ -7,6 +7,7 @@
 #define MAX_MEMORY_ADDR 999
 #define MAX_CMD_LENGTH 4
 #define MAX_INT 4095
+#define MAX_STR_LEN 100
 
 #define IMMEDIATE_ADDR 0
 #define DIRECT_ADDR 1

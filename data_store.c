@@ -122,3 +122,12 @@ Label* get_label_proxy(char* name){
     return label;
 }
 
+void data_store_cleanup(){
+    /* TODO: MAKE PROPER CLEANUP!!!! */
+    label_proxies_stack = NULL;
+    label_proxies_tail = NULL;
+
+    commands_stack = NULL;
+    commands_stack_tail = NULL;
+    data_count = 0;
+}
