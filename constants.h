@@ -26,7 +26,7 @@
 #define LINE_COMMAND 0
 #define LINE_INSTRUCTION 1
 
-#define SRC_EXT .as
+#define SRC_EXT ".as"
 #define WHITESPACE " \t"
 
 typedef unsigned short int t_word;
@@ -42,6 +42,8 @@ typedef struct label_proxy {
     char *name;
     char type;
     void *target;
+    int offset; /* for data or string labels */
+    struct label_proxy *next;
 } Label;
 
 typedef struct cmd {
@@ -58,6 +60,8 @@ typedef struct argument {
 
 typedef struct cmd_node {
     t_cmd* command;
+    int position;
+    int size;
     struct argument *dest;
     struct argument *src;
     struct cmd_node *next;

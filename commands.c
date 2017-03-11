@@ -26,9 +26,6 @@ t_word get_index_code(char* line) {
 }
 
 t_word get_label_code(char* line) {
-    t_label *lab;
-    lab = get_label(line);
-    
     return 6;
 }
 
@@ -48,6 +45,11 @@ t_word get_const_code(char* arg) {
 
 Command* cmd_stack;
 Command* cmd_stack_tail;
+int cmd_stack_counter = 0;
+
+Command* get_commands_head() {
+    return cmd_stack;
+}
 
 Command* command_stack_push(Command* cmd) {
     if(cmd_stack_tail == NULL) {
@@ -60,15 +62,18 @@ Command* command_stack_push(Command* cmd) {
     return cmd;
 }
 
-Command* create_command_node() {
+Command* create_command_node(t_cmd *command) {
     Command* cmd;
     cmd = malloc(sizeof(Command));
+    cmd->command = command;
+    cmd_stack_counter += command->arg_group+1;
     if (cmd == NULL){
         /* TODO print error */
         return NULL;
     }
     return command_stack_push(cmd);
 }
+
 Argument* create_argument() {
    return malloc(sizeof(Argument)); 
 }
@@ -82,7 +87,6 @@ t_cmd commands[] = {
     {"not", 4, 1},
     {"clr", 5, 1}
 };
-t_cmd err = {"error", -1, -1};
 t_cmd* get_command(char* name){
 
     int i;
@@ -90,5 +94,5 @@ t_cmd* get_command(char* name){
         if (strcmp(name, commands[i].name) == 0)
             return &commands[i];
     }
-    return &err;
+    return NULL;
 }

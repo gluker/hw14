@@ -54,10 +54,16 @@ t_word get_label_addr(char* label) {
 }
 
 t_word data_store[100];
+
 int data_count = 0;
-int push_data(t_word data) {
+
+int get_data_count(){
+    return data_count;
+}
+
+t_word* push_data(t_word data) {
     data_store[data_count] = data;
-    return data_count++;
+    return &(data_store[data_count++]);
 }
 
 t_word *commands_stack = NULL;
@@ -73,7 +79,46 @@ int push_command(t_word cmd) {
     return tail_index++;
 }
 
-Label* get_label_proxy(char* name){
+Label* label_proxies_stack;
+Label* label_proxies_tail;
+Label* search_for_proxy(char* name) {
+    Label* label;
+    label = label_proxies_stack;
+    while (label != NULL) {
+        if (strcmp(label->name, name) == 0)
+            return label;
+        label = label->next;
+    }
     return NULL;
+}
+Label* add_label_proxy(char* name, int type, int offset, void *target){
+    Label* label;
+    label = search_for_proxy(name);
+    if (label == NULL){
+        label = malloc(sizeof(Label));
+        label->type = type;
+        label->target = target;
+        label->offset = offset;
+        label->name = malloc(strlen(name));
+        strcpy(label->name, name);
+        if (label_proxies_stack == NULL) {
+            label_proxies_stack = label;
+        } else {
+            label_proxies_tail->next = label;
+        }
+        label_proxies_tail = label;
+    } else {
+        label->type = type;
+        label->target = target;
+    }
+    return label;
+}
+
+Label* get_label_proxy(char* name){
+    Label* label;
+    label = search_for_proxy(name);
+    if (label == NULL)
+        label = add_label_proxy(name, -1, -1, NULL);
+    return label;
 }
 

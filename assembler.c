@@ -56,28 +56,29 @@ void parse_args(char *arguments,
     *arg1 = parse_argument(arguments, arg1_type);
 }
 
-int store_string(char* string) {
-    int start_index;
+int store_string(char* string, t_word *start) {
+    int offset;
     char *begin, *end;
     begin = strchr(string, '"') + 1;
     end = strchr(begin, '"');
-    start_index = push_data(*(begin++));
+    offset = get_data_count();
+    start = push_data(*(begin++));
     while (begin < end)
         push_data(*(begin++));
-    return start_index;
+    return offset;
 }
 
-int store_data(char* arg) {
-    char *comma;
-    int start_index;
-    start_index = push_data(atoi(arg));
+int store_data(char* arg, t_word *start) {
+    int offset;
+    offset = get_data_count();
+    start = push_data(atoi(arg));
     while((arg = strchr(arg, ',')) != NULL){
         push_data(atoi(++arg));
     }
-    return start_index;
+    return offset;
 }
 
-int handle_instruction_line(char *line){
+int handle_instruction_line(char *line, void *target){
     char* c = strpbrk(line, WHITESPACE);
     char* args = NULL;
     
@@ -87,31 +88,31 @@ int handle_instruction_line(char *line){
     }
     
     if (strcmp(line, ".entery") == 0) {
-        return;
+        return -1;
     }
     if (strcmp(line, ".string") == 0) {
-        return store_string(args);
+        return store_string(args, target);
     }
     if (strcmp(line, ".extern") == 0) {
-        return;
+        return -1;
     }
     if (strcmp(line, ".data") == 0) {
-        return store_data(args);
+        return store_data(args, target);
     }
 
     fprintf(stderr, "Unrecognized instruction'%s'\n", line);
+    return -1;
 }
 
 Argument* get_argument(char *arg){
     int i;
-    char *comma;
     char *nextarg;
     Argument* argument;
     argument = create_argument();
 
     nextarg = strchr(arg, ',');
     if (nextarg != NULL) {
-        nextarg = '\n';
+        *nextarg = '\n';
         nextarg++;
     } 
     
@@ -120,20 +121,20 @@ Argument* get_argument(char *arg){
 
     if (arg[0] == '#') {
         argument->addr_type = IMMEDIATE_ADDR;
-        argument->value = get_const_code(argument);   
+        argument->value = get_const_code(arg);   
         arg = nextarg;
         return argument;
     }
     
     if (i != -1) {
-        if (strchr(argument, '[') == NULL) {
+        if (strchr(arg, '[') == NULL) {
             argument->addr_type = REGISTER_ADDR;
             argument->value = get_register_code(arg);
             arg = nextarg;
             return argument;
         }
         argument->addr_type = INDEX_ADDR;
-        argument->value = get_index_code(argument);
+        argument->value = get_index_code(arg);
         arg = nextarg;
         return argument;
     }
@@ -162,13 +163,9 @@ Command* add_args(Command *cmd, char *args) {
     return cmd;
 }
 
-int handle_cmd_line(char *line) {
-    /*  
-        imply that line it trimmed
-        returns command index in stack
-    */
-    t_word arg1, arg2, cmd;
-    int arg1_type = 0, arg2_type = 0, cmd_index;
+Command* handle_cmd_line(char *line) {
+    t_word arg1, arg2;
+    int arg1_type = 0, arg2_type = 0;
     char* c = strpbrk(line, WHITESPACE);
     t_cmd* command;
     Command* command_node;
@@ -181,37 +178,15 @@ int handle_cmd_line(char *line) {
     }
 
     command = get_command(line);
-    if(command->opcode == -1){
+    if(command == NULL){
         fprintf(stderr, "Unrecognized command '%s'\n", line);
-        return -1;
+        return NULL;
     }
-    command_node = create_command_node();
-    command_node->command = command;
+    command_node = create_command_node(command);
     add_args(command_node, args);
 
-    switch (command->arg_group) {
-        case 0:
-            cmd = get_command_code(command, arg1_type, arg2_type);
-            cmd_index = push_command(cmd);
-            break;
-        case 1:
-            cmd = get_command_code(command, arg2_type, arg2_type);
-            cmd_index = push_command(cmd);
-            push_command(arg1);
-            break;
-        case 2:
-            cmd = get_command_code(command, arg1_type, arg2_type);
-            cmd_index = push_command(cmd);
-            push_command(arg1);
-            push_command(arg2);
-            break;
-        default:
-            fprintf(stderr, "Unrecognized command '%s'\n", line);
-            return -1;
-    }
-
     printf("Thats a command %s line!\n", command->name);
-    return cmd_index;
+    return command_node;
 }
 
 
@@ -222,7 +197,8 @@ int is_alpha(char c) {
 void parse_line(char *line){
     char *white;
     char *label = NULL;
-    int line_type, label_addr;
+    int line_type, offset = -1;
+    void *target = NULL;
     if (line[0] == ';')
         return;
     white = strchr(line, ':');
@@ -238,20 +214,20 @@ void parse_line(char *line){
         case '\0':
             return;
         case '.':
-            label_addr = handle_instruction_line(line);
+            offset = handle_instruction_line(line, target);
             line_type = LINE_INSTRUCTION;
             break;
         default:
             line_type = LINE_COMMAND;
-            label_addr = handle_cmd_line(line);
+            target = handle_cmd_line(line);
     }
 
     if (label != NULL)
-        save_label(label, line_type, label_addr);
+        add_label_proxy(label, line_type, offset, target);
 
 }
 
-void assemble(FILE *source){
+void read_from_file(FILE *source){
     char *line_buffer = NULL;
     char c;
 
@@ -270,24 +246,38 @@ void assemble(FILE *source){
     }
 }
 
+void assemble_files(char* basename){
+    Command *current_cmd;  
+    
+}
+
+char* str_concat(char* str1, char* str2) {
+    char* newstr = malloc(strlen(str1) + strlen(str2));
+    strcpy(newstr, str1);
+    strcat(newstr, str2);
+    return newstr;
+}
+
 int main(int argc, char *argv[])
 {
     int i=0; FILE *current_source;
-
+    char* src_filename;
     if (argc < 2) {
         printf("Specify names of .as files to assemble\n");
         return 1;
     }
 
     for (i=1; i < argc; i++){
-        current_source = fopen(argv[i], "r");
+        src_filename = str_concat(argv[i], SRC_EXT);
+        current_source = fopen(src_filename, "r");
         if (current_source == NULL){
-            printf("Can't open file %s\n", argv[i]);
+            printf("Can't open file %s\n", src_filename);
             continue;
         }
         printf("compiling %s...\n", argv[i]);
-        assemble(current_source);
+        read_from_file(current_source);
     }
 
+    free(src_filename);
     return 0;
 }
