@@ -29,6 +29,17 @@ t_word get_label_code(char* line) {
     return 6;
 }
 
+t_word get_argument_code(Argument *arg) {
+    switch (arg->addr_type) {
+        case IMMEDIATE_ADDR:
+        case INDEX_ADDR:
+        case REGISTER_ADDR:
+            return arg->value;
+        case DIRECT_ADDR:
+            break;
+    }
+    return 0;
+}
 t_word get_command_code(t_cmd* cmd, int arg1_type, int arg2_type) {
     return BASIC_CMD |
             (cmd->arg_group << GROUP_OFFSET) |
@@ -40,7 +51,7 @@ t_word get_command_code(t_cmd* cmd, int arg1_type, int arg2_type) {
 t_word get_const_code(char* arg) {
     if (arg[0] == '#')
         arg++;
-    return (t_word)atoi(arg) << CONSTANT_OFFSET;
+    return (atoi(arg) << CONSTANT_OFFSET) & WORD_MASK;
 }
 
 Command* cmd_stack;
@@ -66,6 +77,7 @@ Command* create_command_node(t_cmd *command) {
     Command* cmd;
     cmd = malloc(sizeof(Command));
     cmd->command = command;
+    cmd->position = cmd_stack_counter;
     cmd_stack_counter += command->arg_group+1;
     if (cmd == NULL){
         /* TODO print error */
@@ -78,14 +90,24 @@ Argument* create_argument() {
    return malloc(sizeof(Argument)); 
 }
 
-int cmd_count = 6;
+int cmd_count = 16;
 t_cmd commands[] = {
     {"mov", 0, 2},
     {"cmp", 1, 2},
     {"add", 2, 2},
     {"sub", 3, 2},
     {"not", 4, 1},
-    {"clr", 5, 1}
+    {"clr", 5, 1},
+    {"lea", 6, 2},
+    {"inc", 7, 1},
+    {"dec", 8, 1},
+    {"jmp", 9, 1},
+    {"bne", 10, 1},
+    {"red", 11, 1},
+    {"prn", 12, 1},
+    {"jsr", 13, 1},
+    {"rts", 14, 0},
+    {"stop", 15, 0},
 };
 t_cmd* get_command(char* name){
 

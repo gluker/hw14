@@ -89,7 +89,7 @@ int handle_instruction_line(char *line, void *target){
         *c = '\0';
     }
     
-    if (strcmp(line, ".entery") == 0) {
+    if (strcmp(line, ".entry") == 0) {
         not_implemented();
         return -1;
     }
@@ -108,56 +108,57 @@ int handle_instruction_line(char *line, void *target){
     return -1;
 }
 
-Argument* get_argument(char *arg){
+Argument* get_argument(char **arg){
     int i;
     char *nextarg;
     Argument* argument;
     argument = create_argument();
 
-    nextarg = strchr(arg, ',');
+    nextarg = strchr(*arg, ',');
     if (nextarg != NULL) {
         *nextarg = '\0';
         nextarg++;
     } 
     
-    arg = trim_left(arg);
-    i = get_register_index(arg);
+    *arg = trim_left(*arg);
+    i = get_register_index(*arg);
 
-    if (arg[0] == '#') {
+    if ((*arg)[0] == '#') {
         argument->addr_type = IMMEDIATE_ADDR;
-        argument->value = get_const_code(arg);   
-        arg = nextarg;
+        argument->value = get_const_code(*arg);   
+        *arg = nextarg;
         return argument;
     }
     
     if (i != -1) {
-        if (strchr(arg, '[') == NULL) {
+        if (strchr(*arg, '[') == NULL) {
             argument->addr_type = REGISTER_ADDR;
-            argument->value = get_register_code(arg);
-            arg = nextarg;
+            argument->value = get_register_code(*arg);
+            *arg = nextarg;
             return argument;
         }
         argument->addr_type = INDEX_ADDR;
-        argument->value = get_index_code(arg);
-        arg = nextarg;
+        argument->value = get_index_code(*arg);
+        *arg = nextarg;
         return argument;
     }
 
     argument->addr_type = DIRECT_ADDR;
-    argument->label = get_label_proxy(arg);
-    arg = nextarg;
+    argument->label = get_label_proxy(*arg);
+    *arg = nextarg;
     return argument;
 }
+
 Command* add_args(Command *cmd, char *args) {
     switch(cmd->command->arg_group) {
         case 0:
             break;
         case 1:
-            cmd->dest = get_argument(args);
+            cmd->dest = get_argument(&args);
             break;
         case 2:
-            cmd->src = get_argument(args);
-            cmd->dest = get_argument(args);
+            cmd->src = get_argument(&args);
+            cmd->dest = get_argument(&args);
             break;
         default:
             /*TODO: handle as an error */
@@ -178,7 +179,6 @@ Command* handle_cmd_line(char *line) {
     if (c != NULL) {
         *c = '\0';
         args = c + 1;
-        parse_args(args, &arg1, &arg1_type, &arg2, &arg2_type);
     }
 
     command = get_command(line);
@@ -191,11 +191,6 @@ Command* handle_cmd_line(char *line) {
 
     log_debug_info("Thats a command %s line!\n", command->name);
     return command_node;
-}
-
-
-int is_alpha(char c) {
-    return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'Z');
 }
 
 void parse_line(char *line){
@@ -242,10 +237,35 @@ void read_from_file(FILE *source){
     }
 }
 
+void print_command(FILE *file, Command *cmd) {
+
+    int i = cmd->position + FIRST_ADDR_OFFSET;
+     
+    fprintf(file, "%X %X\n", i++, 
+        get_command_code(cmd->command,
+        cmd->src ? cmd->src->addr_type : 0,
+        cmd->dest ? cmd->dest->addr_type : 0));
+    if (cmd->command->arg_group > 1) 
+        fprintf(file, "%X %X\n", i++, get_argument_code(cmd->src));
+    if (cmd->command->arg_group > 0) 
+        fprintf(file, "%X %X\n", i++, get_argument_code(cmd->dest));
+    
+}
+
 void assemble_files(char* basename){
     Command *current_cmd;  
-    
+
+    current_cmd = get_commands_head();
     log_debug_info("assembling files for %s\n", basename);
+
+    /* fprintf(stdout , "%X %X\n",100 ,10); */
+    while (current_cmd != NULL){
+
+        print_command(stdout, current_cmd);
+        current_cmd = current_cmd->next;
+    }
+
+
 }
 
 char* str_concat(char* str1, char* str2) {

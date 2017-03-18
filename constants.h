@@ -19,6 +19,7 @@
 #define FIRST_ARG_OFFSET 4
 #define SECOND_ARG_OFFSET 2
 #define BASIC_CMD 28672 /* 111 on the left side */
+#define WORD_MASK 0x7FFF
 
 #define CONSTANT_OFFSET 2
 #define FIRST_REGISTER_OFFSET 8
@@ -27,8 +28,10 @@
 #define LINE_COMMAND 0
 #define LINE_INSTRUCTION 1
 
+#define FIRST_ADDR_OFFSET 100
 #define SRC_EXT ".as"
-#define WHITESPACE " \t"
+#define OBJ_EXT ".o"
+#define WHITESPACE " \t\n"
 
 typedef unsigned short int t_word;
 

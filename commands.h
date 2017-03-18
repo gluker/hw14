@@ -12,6 +12,8 @@ t_word get_index_code(char*);
 t_word get_label_code(char*);
 t_word get_command_code(t_cmd*, int, int);
 
+t_word get_argument_code(Argument *arg);
+
 Argument* create_argument();
 Command* create_command_node(t_cmd*);
 Command* command_stack_push(Command*);
