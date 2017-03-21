@@ -79,8 +79,8 @@ int push_command(t_word cmd) {
     return tail_index++;
 }
 
-Label* label_proxies_stack;
-Label* label_proxies_tail;
+Label* label_proxies_stack = NULL;
+Label* label_proxies_tail = NULL;
 Label* search_for_proxy(char* name) {
     Label* label;
     label = label_proxies_stack;
@@ -96,9 +96,6 @@ Label* add_label_proxy(char* name, int type, int offset, void *target){
     label = search_for_proxy(name);
     if (label == NULL){
         label = malloc(sizeof(Label));
-        label->type = type;
-        label->target = target;
-        label->offset = offset;
         label->name = malloc(strlen(name));
         strcpy(label->name, name);
         if (label_proxies_stack == NULL) {
@@ -107,10 +104,11 @@ Label* add_label_proxy(char* name, int type, int offset, void *target){
             label_proxies_tail->next = label;
         }
         label_proxies_tail = label;
-    } else {
-        label->type = type;
-        label->target = target;
     }
+    label->type = type;
+    label->target = target;
+    label->offset = offset;
+
     return label;
 }
 

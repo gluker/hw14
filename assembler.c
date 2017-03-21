@@ -15,47 +15,12 @@ char* trim_left(char *line) {
     return line;
 }
 
-t_word parse_argument(char *argument, int* type){
-    int i;
-
-    argument = trim_left(argument);
-    i = get_register_index(argument);
-
-    if (argument[0] == '#') {
-        log_debug_info("Immediate addr\n");
-        *type = IMMEDIATE_ADDR;
-        return get_const_code(argument);   
-    }
-    
-    if (i != -1) {
-        if (strchr(argument, '[') == NULL) {
-            log_debug_info("%s is a register: %d\n", argument, i);
-            *type = REGISTER_ADDR;
-            return get_register_code(argument);
-        }
-        log_debug_info("%s is an index: %d\n", argument, i);
-        *type = INDEX_ADDR;
-        return get_index_code(argument);
-    }
-
-    *type = DIRECT_ADDR;
-    return get_label_code(argument);
-}
-
-void parse_args(char *arguments, 
-        t_word *arg1, int *arg1_type, t_word *arg2, int *arg2_type){
-    char* comma;
-
-    if (arguments == NULL)
-        return;
-
-    comma = strchr(arguments, ',');
-    if (comma != NULL) {
-        *comma = '\0'; 
-        *arg2 = parse_argument(comma + 1, arg2_type);
-    }
-
-    *arg1 = parse_argument(arguments, arg1_type);
+char* cut_word(char *line) {
+    char *ws;
+    ws = strpbrk(line, WHITESPACE);
+    if (ws != NULL)
+        *ws = '\0';
+    return line;
 }
 
 int store_string(char* string, t_word *start) {
@@ -114,13 +79,15 @@ Argument* get_argument(char **arg){
     Argument* argument;
     argument = create_argument();
 
-    nextarg = strchr(*arg, ',');
+    nextarg = strpbrk(*arg, ",");
     if (nextarg != NULL) {
         *nextarg = '\0';
         nextarg++;
     } 
     
     *arg = trim_left(*arg);
+    cut_word(*arg);
+
     i = get_register_index(*arg);
 
     if ((*arg)[0] == '#') {
@@ -258,7 +225,7 @@ void assemble_files(char* basename){
     current_cmd = get_commands_head();
     log_debug_info("assembling files for %s\n", basename);
 
-    /* fprintf(stdout , "%X %X\n",100 ,10); */
+    fprintf(stdout , "%X %X\n", get_cmd_counter() ,10);
     while (current_cmd != NULL){
 
         print_command(stdout, current_cmd);

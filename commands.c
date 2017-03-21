@@ -25,10 +25,6 @@ t_word get_index_code(char* line) {
             (r2 << SECOND_REGISTER_OFFSET);
 }
 
-t_word get_label_code(char* line) {
-    return 6;
-}
-
 t_word get_argument_code(Argument *arg) {
     switch (arg->addr_type) {
         case IMMEDIATE_ADDR:
@@ -36,7 +32,7 @@ t_word get_argument_code(Argument *arg) {
         case REGISTER_ADDR:
             return arg->value;
         case DIRECT_ADDR:
-            break;
+            return get_label_code(arg->label);
     }
     return 0;
 }
@@ -58,6 +54,9 @@ Command* cmd_stack;
 Command* cmd_stack_tail;
 int cmd_stack_counter = 0;
 
+int get_cmd_counter() {
+    return cmd_stack_counter;
+}
 Command* get_commands_head() {
     return cmd_stack;
 }
@@ -84,6 +83,10 @@ Command* create_command_node(t_cmd *command) {
         return NULL;
     }
     return command_stack_push(cmd);
+}
+
+t_word get_label_code(Label* label) {
+    return ((label->offset + cmd_stack_counter) << LABEL_ADDR_OFFSET | label->type);
 }
 
 Argument* create_argument() {
