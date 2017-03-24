@@ -204,48 +204,60 @@ void print_data(FILE *file, t_word *data, int index) {
     fprintf(file, "%X %X\n", index, *data);
 }
 
-void print_command(FILE *file, Command *cmd) {
-
-    int i = cmd->position + FIRST_ADDR_OFFSET;
-     
-    fprintf(file, "%X %X\n", i++, 
-        get_command_code(cmd->command,
-        cmd->src ? cmd->src->addr_type : 0,
-        cmd->dest ? cmd->dest->addr_type : 0));
-    if (cmd->command->arg_group > 1) 
-        fprintf(file, "%X %X\n", i++, get_argument_code(cmd->src));
-    if (cmd->command->arg_group > 0) 
-        fprintf(file, "%X %X\n", i++, get_argument_code(cmd->dest));
-    
-}
-
-void assemble_files(char* basename){
-    Command *current_cmd;  
-    t_word* data;
-    int index;
-    current_cmd = get_commands_head();
-    log_debug_info("assembling files for %s\n", basename);
-
-    fprintf(stdout , "%X %X\n", get_cmd_counter() ,get_data_count());
-    while (current_cmd != NULL){
-
-        print_command(stdout, current_cmd);
-        current_cmd = current_cmd->next;
-    }
-
-    index = get_cmd_counter() + FIRST_ADDR_OFFSET;
-    while((data = pop_head_data()) != NULL) {
-        print_data(stdout, data, index++);
-    }
-
-
-}
-
 char* str_concat(char* str1, char* str2) {
     char* newstr = malloc(strlen(str1) + strlen(str2));
     strcpy(newstr, str1);
     strcat(newstr, str2);
     return newstr;
+}
+
+void assemble_files(char* basename){
+    Command *current_cmd;  
+    FILE *obj_out, *ext_out, *ent_out;
+    char *obj_name, *ext_name, *ent_name;
+    t_word* data;
+    int index, cmd_addr;
+
+    obj_name = str_concat(basename, OBJ_EXT);
+    ext_name = str_concat(basename, EXT_EXT);
+    ent_name = str_concat(basename, ENT_EXT);
+    obj_out = fopen(obj_name, "w");
+    ext_out = fopen(ext_name, "w");
+    ent_out = fopen(ent_name, "w");
+
+    current_cmd = get_commands_head();
+    log_debug_info("assembling files for %s\n", basename);
+
+    fprintf(obj_out, "%X %X\n", get_cmd_counter() ,get_data_count());
+    while (current_cmd != NULL){
+        index = current_cmd->position + FIRST_ADDR_OFFSET;
+         
+        fprintf(obj_out, "%X %X\n", index++, 
+            get_command_code(current_cmd->command,
+            current_cmd->src ? current_cmd->src->addr_type : 0,
+            current_cmd->dest ? current_cmd->dest->addr_type : 0));
+        if (current_cmd->command->arg_group > 1) {
+            fprintf(obj_out, "%X %X\n", index++, get_argument_code(current_cmd->src));
+            if (current_cmd->src->label != NULL 
+                && current_cmd->src->label->flags & LABEL_IS_EXTERNAL)
+                fprintf(ext_out, "%s %X\n", current_cmd->src->label->name, index-1);
+
+        }
+        if (current_cmd->command->arg_group > 0) {
+            fprintf(obj_out, "%X %X\n", index++, get_argument_code(current_cmd->dest));
+            if (current_cmd->dest->label != NULL 
+                && current_cmd->dest->label->flags & LABEL_IS_EXTERNAL)
+                fprintf(ext_out, "%s %X\n", current_cmd->dest->label->name, index-1);
+        }
+        current_cmd = current_cmd->next;
+    }
+
+    index = get_cmd_counter() + FIRST_ADDR_OFFSET;
+    while((data = pop_head_data()) != NULL) {
+        print_data(obj_out, data, index++);
+    }
+
+
 }
 
 int main(int argc, char *argv[])
@@ -263,6 +275,7 @@ int main(int argc, char *argv[])
             printf("Can't open file %s\n", src_filename);
             continue;
         }
+        free(src_filename);
         printf("compiling %s...\n", argv[i]);
         clear_state();
         read_from_file(current_source);

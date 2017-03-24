@@ -37,7 +37,9 @@
 
 #define FIRST_ADDR_OFFSET 100
 #define SRC_EXT ".as"
-#define OBJ_EXT ".o"
+#define OBJ_EXT ".ob"
+#define EXT_EXT ".ext"
+#define ENT_EXT ".ent"
 #define WHITESPACE " \t\n"
 
 typedef unsigned short int t_word;
