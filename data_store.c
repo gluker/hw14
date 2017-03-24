@@ -44,6 +44,7 @@ t_label *get_label(char* label) {
     return NULL;
 }
 
+/*TODO: utilize get_label function*/
 t_word get_label_addr(char* label) {
     int i;
     for (i=0; i<labels_count; i++) {
@@ -61,9 +62,23 @@ int get_data_count(){
     return data_count;
 }
 
+t_word* pop_head_data(){
+    static int head_position;
+    if (head_position >= data_count)
+        return NULL;
+    return &(data_store[head_position++]);
+}
+
 t_word* push_data(t_word data) {
-    data_store[data_count] = data;
+    data_store[data_count] = (data & WORD_MASK);
     return &(data_store[data_count++]);
+}
+
+int store_extern(char *name) {
+    Label* label;
+    label = add_label_proxy(name, -1, -1, NULL);
+    label->flags = LABEL_IS_EXTERNAL;
+    return 0;
 }
 
 t_word *commands_stack = NULL;

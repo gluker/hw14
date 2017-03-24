@@ -12,6 +12,8 @@ t_word get_label_addr(char*);
 Label* get_label_proxy(char*);
 Label* add_label_proxy(char*, int, int, void*);
 
+t_word* pop_head_data();
+int store_extern(char*);
 
 int push_command(t_word);
 int get_data_count();

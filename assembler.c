@@ -32,6 +32,7 @@ int store_string(char* string, t_word *start) {
     start = push_data(*(begin++));
     while (begin < end)
         push_data(*(begin++));
+    push_data('\0');
     return offset;
 }
 
@@ -48,12 +49,12 @@ int store_data(char* arg, t_word *start) {
 int handle_instruction_line(char *line, void *target){
     char* c = strpbrk(line, WHITESPACE);
     char* args = NULL;
-    
+
     if (c != NULL) {
         args = c + 1;
         *c = '\0';
     }
-    
+
     if (strcmp(line, ".entry") == 0) {
         not_implemented();
         return -1;
@@ -62,8 +63,7 @@ int handle_instruction_line(char *line, void *target){
         return store_string(args, target);
     }
     if (strcmp(line, ".extern") == 0) {
-        not_implemented();
-        return -1;
+        return store_extern(cut_word(args));
     }
     if (strcmp(line, ".data") == 0) {
         return store_data(args, target);
@@ -136,8 +136,6 @@ Command* add_args(Command *cmd, char *args) {
 }
 
 Command* handle_cmd_line(char *line) {
-    t_word arg1, arg2;
-    int arg1_type = 0, arg2_type = 0;
     char* c = strpbrk(line, WHITESPACE);
     t_cmd* command;
     Command* command_node;
@@ -191,17 +189,19 @@ void parse_line(char *line){
 
     if (label != NULL)
         add_label_proxy(label, line_type, offset, target);
-
 }
 
 void read_from_file(FILE *source){
-    char *line_buffer[MAX_STR_LEN];
-    char c;
+    char line_buffer[MAX_STR_LEN];
 
     while(fgets(line_buffer, MAX_STR_LEN, source) != NULL) {
         current_line_number++;
         parse_line(line_buffer);
     }
+}
+
+void print_data(FILE *file, t_word *data, int index) {
+    fprintf(file, "%X %X\n", index, *data);
 }
 
 void print_command(FILE *file, Command *cmd) {
@@ -221,15 +221,21 @@ void print_command(FILE *file, Command *cmd) {
 
 void assemble_files(char* basename){
     Command *current_cmd;  
-
+    t_word* data;
+    int index;
     current_cmd = get_commands_head();
     log_debug_info("assembling files for %s\n", basename);
 
-    fprintf(stdout , "%X %X\n", get_cmd_counter() ,10);
+    fprintf(stdout , "%X %X\n", get_cmd_counter() ,get_data_count());
     while (current_cmd != NULL){
 
         print_command(stdout, current_cmd);
         current_cmd = current_cmd->next;
+    }
+
+    index = get_cmd_counter() + FIRST_ADDR_OFFSET;
+    while((data = pop_head_data()) != NULL) {
+        print_data(stdout, data, index++);
     }
 
 

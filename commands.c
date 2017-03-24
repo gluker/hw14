@@ -86,7 +86,14 @@ Command* create_command_node(t_cmd *command) {
 }
 
 t_word get_label_code(Label* label) {
-    return ((label->offset + cmd_stack_counter) << LABEL_ADDR_OFFSET | label->type);
+    if (label->flags & LABEL_IS_EXTERNAL)
+        return CODE_TYPE_EXTERNAL;
+    if (label->type == LINE_COMMAND)
+        return ((((Command*)label->target)->position + FIRST_ADDR_OFFSET ) 
+                    << LABEL_ADDR_OFFSET | label->type);
+
+    return ((label->offset + cmd_stack_counter + FIRST_ADDR_OFFSET ) 
+                << LABEL_ADDR_OFFSET | label->type);
 }
 
 Argument* create_argument() {

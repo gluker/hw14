@@ -17,7 +17,7 @@ t_word get_argument_code(Argument *arg);
 Argument* create_argument();
 Command* create_command_node(t_cmd*);
 Command* command_stack_push(Command*);
-Command* get_cmd_head();
+Command* get_commands_head();
 int get_cmd_counter();
 
 int is_register(char*);

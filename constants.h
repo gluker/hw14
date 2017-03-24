@@ -14,6 +14,9 @@
 #define INDEX_ADDR 2
 #define REGISTER_ADDR 3
 
+#define CODE_TYPE_EXTERNAL 1
+#define CODE_TYPE_RELOCATABLE 2
+
 #define GROUP_OFFSET 10
 #define OPCODE_OFFSET 6
 #define FIRST_ARG_OFFSET 4
@@ -27,7 +30,10 @@
 #define LABEL_ADDR_OFFSET 2
 
 #define LINE_COMMAND 0
-#define LINE_INSTRUCTION 1
+#define LINE_INSTRUCTION 2
+
+#define LABEL_IS_EXTERNAL 1
+#define LABEL_IS_ENTRY  2
 
 #define FIRST_ADDR_OFFSET 100
 #define SRC_EXT ".as"
@@ -47,6 +53,7 @@ typedef struct label_proxy {
     char *name;
     char type;
     void *target;
+    int flags;
     int offset; /* for data or string labels */
     struct label_proxy *next;
 } Label;
