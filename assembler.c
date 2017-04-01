@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <ctype.h>
 
 #include "app_state.h"
 #include "constants.h"
@@ -10,7 +11,7 @@
 #include "commands.h"
 
 char* trim_left(char *line) {
-    while (*line == ' ' || *line == '\t')
+    while (isspace(*line))
         line++;
     return line;
 }
@@ -18,7 +19,7 @@ char* trim_left(char *line) {
 char* cut_word(char *line) {
     char *ws;
     ws = strpbrk(line, WHITESPACE);
-    if (ws != NULL)
+    if (ws)
         *ws = '\0';
     return line;
 }
@@ -40,7 +41,7 @@ int store_data(char* arg, t_word *start) {
     int offset;
     offset = get_data_count();
     start = push_data(atoi(arg));
-    while((arg = strchr(arg, ',')) != NULL){
+    while((arg = strchr(arg, ','))){
         push_data(atoi(++arg));
     }
     return offset;
@@ -50,22 +51,26 @@ int handle_instruction_line(char *line, void *target){
     char* c = strpbrk(line, WHITESPACE);
     char* args = NULL;
 
-    if (c != NULL) {
+    if (c) {
         args = c + 1;
         *c = '\0';
     }
 
-    if (strcmp(line, ".entry") == 0) {
-        not_implemented();
+    if(!args) {
+        log_error("Parameter required\n");
         return -1;
     }
-    if (strcmp(line, ".string") == 0) {
+
+    if (!strcmp(line, ".entry")) {
+        return store_entry(cut_word(args));
+    }
+    if (!strcmp(line, ".string")) {
         return store_string(args, target);
     }
-    if (strcmp(line, ".extern") == 0) {
+    if (!strcmp(line, ".extern")) {
         return store_extern(cut_word(args));
     }
-    if (strcmp(line, ".data") == 0) {
+    if (!strcmp(line, ".data")) {
         return store_data(args, target);
     }
 
@@ -80,7 +85,7 @@ Argument* get_argument(char **arg){
     argument = create_argument();
 
     nextarg = strpbrk(*arg, ",");
-    if (nextarg != NULL) {
+    if (nextarg) {
         *nextarg = '\0';
         nextarg++;
     } 
@@ -98,7 +103,7 @@ Argument* get_argument(char **arg){
     }
     
     if (i != -1) {
-        if (strchr(*arg, '[') == NULL) {
+        if (!strchr(*arg, '[')) {
             argument->addr_type = REGISTER_ADDR;
             argument->value = get_register_code(*arg);
             *arg = nextarg;
@@ -110,6 +115,11 @@ Argument* get_argument(char **arg){
         return argument;
     }
 
+    if (!isalpha(**arg)) {
+        log_error("Incorrect argument '%s'\n", *arg);
+        *arg = nextarg;
+        return NULL;
+    }
     argument->addr_type = DIRECT_ADDR;
     argument->label = get_label_proxy(*arg);
     *arg = nextarg;
@@ -147,7 +157,7 @@ Command* handle_cmd_line(char *line) {
     }
 
     command = get_command(line);
-    if(command == NULL){
+    if(!command){
         log_error("Unrecognized command '%s'\n", line);
         return NULL;
     }
@@ -165,8 +175,9 @@ void parse_line(char *line){
     void *target = NULL;
     if (line[0] == ';')
         return;
+
     white = strchr(line, ':');
-    if (white != NULL) {
+    if (white) {
         label = line;
         line = white + 1;
         *white = '\0';
@@ -187,7 +198,7 @@ void parse_line(char *line){
             target = handle_cmd_line(line);
     }
 
-    if (label != NULL)
+    if (label)
         add_label_proxy(label, line_type, offset, target);
 }
 
@@ -211,25 +222,70 @@ char* str_concat(char* str1, char* str2) {
     return newstr;
 }
 
+void check_labels_print_entries(FILE* ent_file){
+    Label *label;
+    t_word addr;
+    label = get_labels_head();
+    while(label){
+        if (label->type == -1 && label->flags ^ LABEL_IS_EXTERNAL)
+            log_error("Missing target for label '%s'\n", label->name);
+        if (label->flags & LABEL_IS_ENTRY) {
+            if (!ent_file)
+                log_error("Something went wrong. Application state isn't correct\n");
+            addr = label->target ? ((Command*)label->target)->position
+                : label->offset + get_cmd_counter();
+            fprintf(ent_file, "%s %X\n", label->name, addr + FIRST_ADDR_OFFSET);
+        }
+        label = label->next;
+    }
+}
+
 void assemble_files(char* basename){
     Command *current_cmd;  
-    FILE *obj_out, *ext_out, *ent_out;
+    FILE *obj_out, *ext_out, *ent_out, *temp_ent;
     char *obj_name, *ext_name, *ent_name;
+    char c;
     t_word* data;
-    int index, cmd_addr;
+    int index;
+
+    temp_ent = tmpfile();
+    check_labels_print_entries(temp_ent);
+
+    if (state_has_errors()) {
+        fclose(temp_ent);
+        return;
+    }
+
+    if(state_has_enteries()){
+        ent_name = str_concat(basename, ENT_EXT);
+        ent_out = fopen(ent_name, "w");
+        free(ent_name);
+        ent_name = NULL;
+        rewind(temp_ent);
+        while((c = getc(temp_ent)) != EOF)
+            putc(c, ent_out);
+        fclose(ent_out);
+    }
+    fclose(temp_ent);
+    
 
     obj_name = str_concat(basename, OBJ_EXT);
-    ext_name = str_concat(basename, EXT_EXT);
-    ent_name = str_concat(basename, ENT_EXT);
     obj_out = fopen(obj_name, "w");
-    ext_out = fopen(ext_name, "w");
-    ent_out = fopen(ent_name, "w");
+    free(obj_name);
+    obj_name = NULL;
+
+    if(state_has_externs()){
+        ext_name = str_concat(basename, EXT_EXT);
+        ext_out = fopen(ext_name, "w");
+        free(ext_name);
+        ext_name = NULL;
+    }
 
     current_cmd = get_commands_head();
     log_debug_info("assembling files for %s\n", basename);
 
-    fprintf(obj_out, "%X %X\n", get_cmd_counter() ,get_data_count());
-    while (current_cmd != NULL){
+    fprintf(obj_out, "%X %X\n", get_cmd_counter(), get_data_count());
+    while (current_cmd){
         index = current_cmd->position + FIRST_ADDR_OFFSET;
          
         fprintf(obj_out, "%X %X\n", index++, 
@@ -238,14 +294,13 @@ void assemble_files(char* basename){
             current_cmd->dest ? current_cmd->dest->addr_type : 0));
         if (current_cmd->command->arg_group > 1) {
             fprintf(obj_out, "%X %X\n", index++, get_argument_code(current_cmd->src));
-            if (current_cmd->src->label != NULL 
+            if (current_cmd->src->label 
                 && current_cmd->src->label->flags & LABEL_IS_EXTERNAL)
                 fprintf(ext_out, "%s %X\n", current_cmd->src->label->name, index-1);
-
         }
         if (current_cmd->command->arg_group > 0) {
             fprintf(obj_out, "%X %X\n", index++, get_argument_code(current_cmd->dest));
-            if (current_cmd->dest->label != NULL 
+            if (current_cmd->dest->label 
                 && current_cmd->dest->label->flags & LABEL_IS_EXTERNAL)
                 fprintf(ext_out, "%s %X\n", current_cmd->dest->label->name, index-1);
         }
@@ -253,11 +308,11 @@ void assemble_files(char* basename){
     }
 
     index = get_cmd_counter() + FIRST_ADDR_OFFSET;
-    while((data = pop_head_data()) != NULL) {
+    while((data = pop_head_data())) {
         print_data(obj_out, data, index++);
     }
-
-
+    fclose(obj_out);
+    fclose(ext_out);
 }
 
 int main(int argc, char *argv[])
@@ -271,15 +326,14 @@ int main(int argc, char *argv[])
     for (i=1; i < argc; i++){
         src_filename = str_concat(argv[i], SRC_EXT);
         current_source = fopen(src_filename, "r");
-        if (current_source == NULL){
+        if (!current_source){
             printf("Can't open file %s\n", src_filename);
             continue;
         }
-        free(src_filename);
         printf("compiling %s...\n", argv[i]);
         clear_state();
         read_from_file(current_source);
-        if (!is_source_correct){
+        if (state_has_errors()){
             printf("Source isn't correct - not creating output files\n");
             continue;
         }
