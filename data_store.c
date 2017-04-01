@@ -64,7 +64,15 @@ Label* add_label_proxy(char* name, int type, int offset, void *target){
     label = search_for_proxy(name);
     if (!label){
         label = malloc(sizeof(Label));
+        if (!label) {
+            log_error("Cannot allocate memory\n");
+            exit(1);
+        }
         label->name = malloc(strlen(name));
+        if (!label->name) {
+            log_error("Cannot allocate memory\n");
+            exit(1);
+        }
         label->next = NULL;
         strcpy(label->name, name);
         if (!label_proxies_stack) {

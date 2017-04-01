@@ -28,7 +28,15 @@ int store_string(char* string, t_word *start) {
     int offset;
     char *begin, *end;
     begin = strchr(string, '"') + 1;
+    if (!begin) {
+        log_error("Bad argument: %s", string);
+        return -1;
+    }
     end = strchr(begin, '"');
+    if (!end) {
+        log_error("Bad argument: %s", string);
+        return -1;
+    }
     offset = get_data_count();
     start = push_data(*(begin++));
     while (begin < end)
@@ -135,6 +143,10 @@ Command* add_args(Command *cmd, char *args) {
             break;
         case 2:
             cmd->src = get_argument(&args);
+            if(!args){
+                log_error("Not enough arguments");
+                break;
+            }
             cmd->dest = get_argument(&args);
             break;
         default:
@@ -205,7 +217,7 @@ void parse_line(char *line){
 void read_from_file(FILE *source){
     char line_buffer[MAX_STR_LEN];
 
-    while(fgets(line_buffer, MAX_STR_LEN, source) != NULL) {
+    while(fgets(line_buffer, MAX_STR_LEN, source)) {
         current_line_number++;
         parse_line(line_buffer);
     }
@@ -217,6 +229,10 @@ void print_data(FILE *file, t_word *data, int index) {
 
 char* str_concat(char* str1, char* str2) {
     char* newstr = malloc(strlen(str1) + strlen(str2));
+    if (!newstr) {
+        log_error("Cannot allocate memory\n");
+        exit(1);
+    }
     strcpy(newstr, str1);
     strcat(newstr, str2);
     return newstr;
@@ -312,7 +328,9 @@ void assemble_files(char* basename){
         print_data(obj_out, data, index++);
     }
     fclose(obj_out);
-    fclose(ext_out);
+    if(state_has_externs()){
+        fclose(ext_out);
+    }
 }
 
 int main(int argc, char *argv[])

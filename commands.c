@@ -2,6 +2,7 @@
 #include <string.h>
 #include "commands.h"
 #include "constants.h"
+#include "app_state.h"
 
 int is_register(char* arg) {
     return arg[0] == 'r' && (arg[1] >= '0' || arg[1] <= '8');
@@ -62,7 +63,7 @@ Command* get_commands_head() {
 }
 
 Command* command_stack_push(Command* cmd) {
-    if(cmd_stack_tail == NULL) {
+    if(!cmd_stack_tail) {
         cmd_stack = cmd;
         cmd_stack_tail = cmd;
         return cmd;
@@ -75,13 +76,16 @@ Command* command_stack_push(Command* cmd) {
 Command* create_command_node(t_cmd *command) {
     Command* cmd;
     cmd = malloc(sizeof(Command));
+    if (!cmd) {
+        log_error("Cannot allocate memory\n");
+        exit(1);
+    }
     cmd->command = command;
     cmd->position = cmd_stack_counter;
     cmd_stack_counter += command->arg_group+1;
-    if (cmd == NULL){
-        /* TODO print error */
-        return NULL;
-    }
+    cmd->src = NULL;
+    cmd->dest = NULL;
+    
     return command_stack_push(cmd);
 }
 
@@ -97,7 +101,16 @@ t_word get_label_code(Label* label) {
 }
 
 Argument* create_argument() {
-   return malloc(sizeof(Argument)); 
+    Argument *arg;
+    arg = malloc(sizeof(Argument)); 
+    if(!arg) {
+        log_error("Cannot alocate memory");
+        exit(1);
+    }
+    arg->label = NULL;
+    arg->value = 0;
+    arg->addr_type = 0;
+    return arg;
 }
 
 int cmd_count = 16;
@@ -123,14 +136,23 @@ t_cmd* get_command(char* name){
 
     int i;
     for (i=0; i < cmd_count; i++) {
-        if (strcmp(name, commands[i].name) == 0)
+        if (!strcmp(name, commands[i].name))
             return &commands[i];
     }
     return NULL;
 }
 
 void commands_cleanup() {
+    Command *cur_cmd, *next_cmd;
 
+    next_cmd = cmd_stack;;
+    while (next_cmd){
+        cur_cmd = next_cmd;
+        next_cmd= next_cmd->next;
+        free(cur_cmd->src);
+        free(cur_cmd->dest);
+        free(cur_cmd);
+    }
     cmd_stack = NULL;
     cmd_stack_tail = NULL;
     cmd_stack_counter = 0;
