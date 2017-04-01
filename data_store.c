@@ -89,6 +89,10 @@ Label* add_label_proxy(char* name, int type, int offset, void *target){
             exit(1);
         }
         label->next = NULL;
+        label->flags = 0;
+        label->type = 0;
+        label->target = NULL;
+        label->offset = 0;
         strcpy(label->name, name);
         if (!label_proxies_stack) {
             label_proxies_stack = label;
@@ -97,7 +101,7 @@ Label* add_label_proxy(char* name, int type, int offset, void *target){
         }
         label_proxies_tail = label;
     }
-    if (label->flags & LABEL_IS_EXTERNAL || label->type > 0 )
+    if ((label->flags & LABEL_IS_EXTERNAL) || label->type > 0 )
         log_error("Label'%s' is already defined\n", name);
     label->type = type;
     label->target = target;

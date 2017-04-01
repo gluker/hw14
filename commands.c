@@ -96,6 +96,7 @@ Command* create_command_node(t_cmd *command) {
     cmd_stack_counter += command->arg_group+1;
     cmd->src = NULL;
     cmd->dest = NULL;
+    cmd->next = NULL;
     
     return command_stack_push(cmd);
 }
@@ -245,8 +246,10 @@ void commands_cleanup() {
     while (next_cmd){
         cur_cmd = next_cmd;
         next_cmd= next_cmd->next;
-        free(cur_cmd->src);
-        free(cur_cmd->dest);
+        if(cur_cmd->src)
+            free(cur_cmd->src);
+        if(cur_cmd->dest)
+            free(cur_cmd->dest);
         free(cur_cmd);
     }
     cmd_stack = NULL;

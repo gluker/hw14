@@ -10,7 +10,9 @@
 #define APP_STATE_ENTERIES 2
 #define APP_STATE_EXTERNS 4
 
+/*
 #define DEBUG
+*/
 
 int app_state;
 int state_has_errors() {

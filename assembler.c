@@ -122,7 +122,6 @@ Argument* get_argument(char **arg){
         *arg = nextarg;
         return argument;
     }
-    
 
     argument->label = get_label_proxy(*arg);
     if (argument->label) {
@@ -163,8 +162,6 @@ Command* add_args(Command *cmd, char *args) {
         if (*(args - 1) != '\0')
             log_error("Too much arguments for %s", cmd->command->name);
     }
-    /*TODO: args should be null */
-
     return cmd;
 }
 
@@ -359,7 +356,7 @@ int main(int argc, char *argv[])
             printf("Can't open file %s\n", src_filename);
             continue;
         }
-        printf("compiling %s...\n", argv[i]);
+        printf("Reading %s...\n", argv[i]);
         clear_state();
         read_from_file(current_source);
         if (state_has_errors()){
