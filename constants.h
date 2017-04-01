@@ -29,7 +29,7 @@
 #define SECOND_REGISTER_OFFSET 2
 #define LABEL_ADDR_OFFSET 2
 
-#define LINE_COMMAND 0
+#define LINE_COMMAND 1
 #define LINE_INSTRUCTION 2
 
 #define LABEL_IS_EXTERNAL 1
@@ -64,6 +64,8 @@ typedef struct cmd {
     char* name;
     int opcode;
     int arg_group;
+    char dest_types;
+    char src_types;
 } t_cmd;
 
 typedef struct argument {

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <ctype.h>
 
 #include "data_store.h"
 #include "constants.h"
@@ -39,6 +39,8 @@ int store_extern(char *name) {
     Label* label;
     state_set_externs();
     label = add_label_proxy(name, -1, -1, NULL);
+    if(!label)
+        return -1;
     label->flags = LABEL_IS_EXTERNAL;
     return 0;
 }
@@ -59,8 +61,21 @@ Label* search_for_proxy(char* name) {
     }
     return NULL;
 }
+int is_valid_label(char* name) {
+    if(!isalpha(*name))
+        return 0;
+    while(*name)
+        if(!isalnum(*(name++)))
+            return 0;
+    return 1;
+}
+
 Label* add_label_proxy(char* name, int type, int offset, void *target){
     Label* label;
+    if (!is_valid_label(name)) {
+        log_error("Invalid label name: '%s'\n", name);
+        return NULL;
+    }
     label = search_for_proxy(name);
     if (!label){
         label = malloc(sizeof(Label));
@@ -82,6 +97,8 @@ Label* add_label_proxy(char* name, int type, int offset, void *target){
         }
         label_proxies_tail = label;
     }
+    if (label->flags & LABEL_IS_EXTERNAL || label->type > 0 )
+        log_error("Label'%s' is already defined\n", name);
     label->type = type;
     label->target = target;
     label->offset = offset;

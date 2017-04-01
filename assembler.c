@@ -92,24 +92,17 @@ Argument* get_argument(char **arg){
     Argument* argument;
     argument = create_argument();
 
+    *arg = trim_left(*arg);
     nextarg = strpbrk(*arg, ",");
     if (nextarg) {
         *nextarg = '\0';
         nextarg++;
     } 
     
-    *arg = trim_left(*arg);
     cut_word(*arg);
 
     i = get_register_index(*arg);
 
-    if ((*arg)[0] == '#') {
-        argument->addr_type = IMMEDIATE_ADDR;
-        argument->value = get_const_code(*arg);   
-        *arg = nextarg;
-        return argument;
-    }
-    
     if (i != -1) {
         if (!strchr(*arg, '[')) {
             argument->addr_type = REGISTER_ADDR;
@@ -123,13 +116,18 @@ Argument* get_argument(char **arg){
         return argument;
     }
 
-    if (!isalpha(**arg)) {
-        log_error("Incorrect argument '%s'\n", *arg);
+    if ((**arg) == '#') {
+        argument->addr_type = IMMEDIATE_ADDR;
+        argument->value = get_const_code(*arg);   
         *arg = nextarg;
-        return NULL;
+        return argument;
     }
-    argument->addr_type = DIRECT_ADDR;
+    
+
     argument->label = get_label_proxy(*arg);
+    if (argument->label) {
+        argument->addr_type = DIRECT_ADDR;
+    }
     *arg = nextarg;
     return argument;
 }
@@ -140,20 +138,33 @@ Command* add_args(Command *cmd, char *args) {
             break;
         case 1:
             cmd->dest = get_argument(&args);
+            if (!check_bitmask(cmd->dest->addr_type, cmd->command->dest_types))
+                log_error("Wrong argument type for %s\n", cmd->command->name);
             break;
         case 2:
             cmd->src = get_argument(&args);
+            if (!check_bitmask(cmd->src->addr_type, cmd->command->src_types))
+                log_error("Wrong argument type for %s\n", cmd->command->name);
             if(!args){
-                log_error("Not enough arguments");
+                log_error("Not enough arguments\n");
                 break;
             }
             cmd->dest = get_argument(&args);
+            if (!check_bitmask(cmd->dest->addr_type, cmd->command->dest_types))
+                log_error("Wrong argument type for %s\n", cmd->command->name);
             break;
         default:
-            /*TODO: handle as an error */
+            log_error("Application state error - unknown arg group\n");
+            exit(1);
             break;
     }
+    if(args) {
+        while (isspace(*(args++)));
+        if (*(args - 1) != '\0')
+            log_error("Too much arguments for %s", cmd->command->name);
+    }
     /*TODO: args should be null */
+
     return cmd;
 }
 
@@ -357,6 +368,7 @@ int main(int argc, char *argv[])
         }
         assemble_files(argv[i]);
     }
+    clear_state();
 
     return 0;
 }

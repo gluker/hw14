@@ -20,6 +20,7 @@ Command* command_stack_push(Command*);
 Command* get_commands_head();
 int get_cmd_counter();
 
+int check_bitmask(char,char);
 int is_register(char*);
 t_cmd* get_command(char*);
 

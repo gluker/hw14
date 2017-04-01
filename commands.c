@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "commands.h"
 #include "constants.h"
 #include "app_state.h"
@@ -46,9 +47,19 @@ t_word get_command_code(t_cmd* cmd, int arg1_type, int arg2_type) {
 }
 
 t_word get_const_code(char* arg) {
-    if (arg[0] == '#')
+    char* temp_arg;
+    arg++;
+    temp_arg = arg;
+    if (*arg == '-' || *arg == '+')
         arg++;
-    return (atoi(arg) << CONSTANT_OFFSET) & WORD_MASK;
+    if (isdigit(*arg)) {
+        while(isdigit(*arg)) arg++;
+        while(isspace(*arg)) arg++;
+        if (*arg == '\0')
+        return (atoi(temp_arg) << CONSTANT_OFFSET) & WORD_MASK;
+    }
+    log_error("Incorrect constant\n");
+    return 0;
 }
 
 Command* cmd_stack;
@@ -77,7 +88,7 @@ Command* create_command_node(t_cmd *command) {
     Command* cmd;
     cmd = malloc(sizeof(Command));
     if (!cmd) {
-        log_error("Cannot allocate memory\n");
+       log_error("Cannot allocate memory\n");
         exit(1);
     }
     cmd->command = command;
@@ -113,24 +124,109 @@ Argument* create_argument() {
     return arg;
 }
 
+int check_bitmask(char index, char mask) {
+    return (1 << index) & mask;
+}
+
 int cmd_count = 16;
 t_cmd commands[] = {
-    {"mov", 0, 2},
-    {"cmp", 1, 2},
-    {"add", 2, 2},
-    {"sub", 3, 2},
-    {"not", 4, 1},
-    {"clr", 5, 1},
-    {"lea", 6, 2},
-    {"inc", 7, 1},
-    {"dec", 8, 1},
-    {"jmp", 9, 1},
-    {"bne", 10, 1},
-    {"red", 11, 1},
-    {"prn", 12, 1},
-    {"jsr", 13, 1},
-    {"rts", 14, 0},
-    {"stop", 15, 0},
+    {"mov", 0, 2, 
+        1 << (DIRECT_ADDR)    | 
+        1 << (INDEX_ADDR)     | 
+        1 << (REGISTER_ADDR) ,
+        1 << (IMMEDIATE_ADDR) |
+        1 << (DIRECT_ADDR)    |
+        1 << (INDEX_ADDR)     | 
+        1 << (REGISTER_ADDR)  
+    }, {"cmp", 1, 2, 
+    
+        1 << (IMMEDIATE_ADDR) |
+        1 << (DIRECT_ADDR)    |
+        1 << (INDEX_ADDR)     | 
+        1 << (REGISTER_ADDR)  ,
+        1 << (IMMEDIATE_ADDR) |
+        1 << (DIRECT_ADDR)    |
+        1 << (INDEX_ADDR)     | 
+        1 << (REGISTER_ADDR)  
+    },
+    {"add", 2, 2,
+        1 << (DIRECT_ADDR)    | 
+        1 << (INDEX_ADDR)     | 
+        1 << (REGISTER_ADDR) ,
+        1 << (IMMEDIATE_ADDR) |
+        1 << (DIRECT_ADDR)    |
+        1 << (INDEX_ADDR)     | 
+        1 << (REGISTER_ADDR)  
+    }, {"sub", 3, 2,
+        1 << (DIRECT_ADDR)    | 
+        1 << (INDEX_ADDR)     | 
+        1 << (REGISTER_ADDR) ,
+        1 << (IMMEDIATE_ADDR) |
+        1 << (DIRECT_ADDR)    |
+        1 << (INDEX_ADDR)     | 
+        1 << (REGISTER_ADDR)  
+    }, {"not", 4, 1,
+        1 << (DIRECT_ADDR)    | 
+        1 << (INDEX_ADDR)     | 
+        1 << (REGISTER_ADDR)  ,
+        0
+    }, {"clr", 5, 1,
+        1 << (DIRECT_ADDR)    | 
+        1 << (INDEX_ADDR)     | 
+        1 << (REGISTER_ADDR)  ,
+        0
+    }, {"lea", 6, 2,
+        1 << (DIRECT_ADDR)    | 
+        1 << (INDEX_ADDR)     | 
+        1 << (REGISTER_ADDR)  ,
+        1 << (DIRECT_ADDR)    | 
+        1 << (INDEX_ADDR)      
+    }, {"inc", 7, 1,
+        1 << (DIRECT_ADDR)    | 
+        1 << (INDEX_ADDR)     | 
+        1 << (REGISTER_ADDR)  ,
+        0
+    
+    },
+    {"dec", 8, 1,
+        1 << (DIRECT_ADDR)    | 
+        1 << (INDEX_ADDR)     | 
+        1 << (REGISTER_ADDR)  ,
+        0
+    },
+    {"jmp", 9, 1,
+        1 << (DIRECT_ADDR)    | 
+        1 << (INDEX_ADDR)     | 
+        1 << (REGISTER_ADDR)  ,
+        0
+    },
+    {"bne", 10, 1,
+        1 << (DIRECT_ADDR)    | 
+        1 << (INDEX_ADDR)     | 
+        1 << (REGISTER_ADDR)  ,
+        0
+    },
+    {"red", 11, 1,
+        1 << (DIRECT_ADDR)    | 
+        1 << (INDEX_ADDR)     | 
+        1 << (REGISTER_ADDR)  ,
+        0
+    },
+    {"prn", 12, 1,
+        1 << (IMMEDIATE_ADDR) |
+        1 << (DIRECT_ADDR)    |
+        1 << (INDEX_ADDR)     | 
+        1 << (REGISTER_ADDR)  ,
+        0
+    },
+    {"jsr", 13, 1,
+        1 << (DIRECT_ADDR)    | 
+        1 << (INDEX_ADDR)     | 
+        1 << (REGISTER_ADDR)  ,
+        0
+    },
+    {"rts", 14, 0, 0, 0},
+    {"stop", 15, 0, 0, 0},
 };
 t_cmd* get_command(char* name){
 
