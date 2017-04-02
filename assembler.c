@@ -145,7 +145,7 @@ Command* add_args(Command *cmd, char *args) {
             if (!check_bitmask(cmd->src->addr_type, cmd->command->src_types))
                 log_error("Wrong argument type for %s\n", cmd->command->name);
             if(!args){
-                log_error("Not enough arguments\n");
+                log_error("Not enough arguments for %s\n", cmd->command->name);
                 break;
             }
             cmd->dest = get_argument(&args);
@@ -160,7 +160,7 @@ Command* add_args(Command *cmd, char *args) {
     if(args) {
         while (isspace(*(args++)));
         if (*(args - 1) != '\0')
-            log_error("Too much arguments for %s", cmd->command->name);
+            log_error("Too much arguments for %s\n", cmd->command->name);
     }
     return cmd;
 }

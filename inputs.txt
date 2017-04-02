@@ -1,0 +1,9 @@
+File 'correct.as' contains correct input from instructions.
+
+File 'er.as' contains following errors:
+    Double definition of label
+    Incorrect label name
+    Inaproppriate patameter type
+    Undefined command
+    Not enough arguments
+    Too much arguments
