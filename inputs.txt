@@ -7,3 +7,5 @@ File 'er.as' contains following errors:
     Undefined command
     Not enough arguments
     Too much arguments
+
+'er2.as' contains undefined label.
